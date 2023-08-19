@@ -138,13 +138,34 @@ fn main() {
     mark_tree(&mut tree_head_ref,&mut "".to_string());
     let hash_code= get_hash_of_tree(tree_head_ref);
 
-    let encoded_str = convert_to_code_str(msg,hash_code);
-    println!("{}",encoded_str);
+    let encoded_str = convert_to_code_str(msg,&hash_code);
+    // println!("{}",encoded_str);
 
     // decode the string
-    // ...
+    println!("{}",decode_encoded_str(encoded_str,&hash_code));
 }
-fn convert_to_code_str(original_msg: String,map: BTreeMap<char,String>) -> String{
+
+fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> String{
+    // decode string
+    let mut ret = String::new();
+    let mut msg_copy = encoded_msg.clone();
+
+    for _ in 0..encoded_msg.len(){
+        for (key,value) in map.iter(){
+            if value.len() <= msg_copy.len() && msg_copy.starts_with(value) {
+                // check if this key matches the current substring
+                ret.push(*key);
+                // remove len chars
+                msg_copy.drain(..value.len());
+            }
+        }
+    }
+
+    ret
+}
+
+
+fn convert_to_code_str(original_msg: String,map: &BTreeMap<char,String>) -> String{
     // converts original message to encoded one
     let mut ret = String::new();
 
