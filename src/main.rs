@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap,VecDeque};
+use std::{collections::{BTreeMap,VecDeque}, hash};
 
 // https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
 
@@ -93,9 +93,8 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
         }
     }
 }
-fn get_vec_of_tree(root: Option<Box<Node>>) -> Vec<Node>{
-
-    let mut ret_vec :Vec<Node>= Vec::new();
+fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,String>{
+    let mut ret_hash: BTreeMap<char,String> = BTreeMap::new();
 
     let mut stack: VecDeque<Box<Node>> = VecDeque::new();
     let mut current = root;
@@ -116,40 +115,65 @@ fn get_vec_of_tree(root: Option<Box<Node>>) -> Vec<Node>{
         let node = stack.pop_back().unwrap();
 
         if node.data != '$'{
-            ret_vec.push(*node.clone());
+            ret_hash.insert(node.data,node.code);
         }
 
         // Move to the right subtree
         current = node.r;
     }
-    ret_vec
+    ret_hash 
 }
 
 fn main() {
-    // let msg = "ABBAABABDA".to_string();
+    let msg = "This is my secret message. Please do not let anyone see!".to_string();
 
-    // let hm = get_hash_char_freq(msg);
+    let hm = get_hash_char_freq(msg.clone());
 
-    // let nodes = get_nodes(hm);
-    let nodeA =  Node::new('A',35);
-    let nodeB =  Node::new('B',10);
-    let nodeC =  Node::new('C',20);
-    let nodeD =  Node::new('D',20);
-    let node_ =  Node::new('_',15);
-    let arr_nodes = [
-        nodeA,nodeB,nodeC,nodeD,node_
-    ];
-    let mut nodes = Vec::from(arr_nodes);
+    let mut nodes = get_nodes(hm);
     // sort in desc order
     nodes.sort();
 
     let mut tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
     mark_tree(&mut tree_head_ref,&mut "".to_string());
-    let vec = get_vec_of_tree(tree_head_ref);
-    for node in vec{
-        println!("Char: {}, code: {}",node.data,node.code);
+    let hash_code= get_hash_of_tree(tree_head_ref);
+
+    let encoded_str = convert_to_code_str(msg,&hash_code);
+    // println!("{}",encoded_str);
+
+    // decode the string
+    println!("{}",decode_encoded_str(encoded_str,&hash_code));
+}
+
+fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> String{
+    // decode string
+    let mut ret = String::new();
+    let mut msg_copy = encoded_msg.clone();
+
+    for _ in 0..encoded_msg.len(){
+        for (key,value) in map.iter(){
+            if value.len() <= msg_copy.len() && msg_copy.starts_with(value) {
+                // check if this key matches the current substring
+                ret.push(*key);
+                // remove len chars
+                msg_copy.drain(..value.len());
+            }
+        }
     }
+
+    ret
+}
+
+
+fn convert_to_code_str(original_msg: String,map: &BTreeMap<char,String>) -> String{
+    // converts original message to encoded one
+    let mut ret = String::new();
+
+    for c in original_msg.chars(){
+        ret.push_str(map.get(&c).unwrap());
+    }
+
+    ret
 }
 
 fn get_hash_char_freq(msg:String) -> BTreeMap<char,usize> {
