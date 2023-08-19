@@ -1,5 +1,4 @@
-use std::collections::{BinaryHeap,BTreeMap};
-use std::{cmp::Reverse};
+use std::collections::{BTreeMap,VecDeque};
 
 // https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
 
@@ -85,6 +84,7 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
             inside.code = marker.to_string();
             marker.push('1');
             mark_tree(&mut inside.r,marker);
+            // need to pop
             marker.pop();
         }
         None => {
@@ -92,6 +92,37 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
             marker.pop();
         }
     }
+}
+fn get_vec_of_tree(root: Option<Box<Node>>) -> Vec<Node>{
+
+    let mut ret_vec :Vec<Node>= Vec::new();
+
+    let mut stack: VecDeque<Box<Node>> = VecDeque::new();
+    let mut current = root;
+
+    loop {
+        // Traverse to the leftmost node while pushing nodes onto the stack
+        while let Some(node) = current {
+            stack.push_back(node.clone());
+            current = node.l;
+        }
+
+        // If the stack is empty, traversal is complete
+        if stack.is_empty() {
+            break;
+        }
+
+        // Process the current node (top of the stack)
+        let node = stack.pop_back().unwrap();
+
+        if node.data != '$'{
+            ret_vec.push(*node.clone());
+        }
+
+        // Move to the right subtree
+        current = node.r;
+    }
+    ret_vec
 }
 
 fn main() {
@@ -115,7 +146,10 @@ fn main() {
     let mut tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
     mark_tree(&mut tree_head_ref,&mut "".to_string());
-    println!("{:?}",tree_head_ref);
+    let vec = get_vec_of_tree(tree_head_ref);
+    for node in vec{
+        println!("Char: {}, code: {}",node.data,node.code);
+    }
 }
 
 fn get_hash_char_freq(msg:String) -> BTreeMap<char,usize> {
