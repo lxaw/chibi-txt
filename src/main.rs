@@ -14,6 +14,7 @@ struct Node{
     freq: usize,
     l: Link,
     r: Link,
+    code:String,
 }
 impl PartialEq for Node{
     fn eq(&self, other: &Self) -> bool {
@@ -35,7 +36,7 @@ impl Ord for Node{
 }
 impl Node{
     fn new(data: char, freq: usize)->Node{
-        Node {data:data,freq:freq,l:None,r:None}
+        Node {data:data,freq:freq,l:None,r:None,code:"".to_string()}
     }
 }
 
@@ -49,21 +50,19 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     // 1) Order the nodes based on freq
     // 2) Merge the two nodes with smallest freqs
     // 3) repeat until one node left
-    let mut root = Node::new('$',0);
-
     while(nodes.len() > 1){
         let new_freq = nodes[0].freq + nodes[1].freq;
         let left_link = Some(Box::new(Node{
             data:nodes[0].data,freq:nodes[0].freq,
-            l:nodes[0].l.clone(),r:nodes[0].r.clone()
+            l:nodes[0].l.clone(),r:nodes[0].r.clone(),code:"".to_string()
         }));
         let right_link = Some(Box::new(Node{
             data:nodes[1].data,freq:nodes[1].freq,
-            l:nodes[1].l.clone(),r:nodes[1].r.clone()
+            l:nodes[1].l.clone(),r:nodes[1].r.clone(),code:"".to_string()
         }));
         // $ is special character
         let new_node = Node{data:'$',freq:new_freq,
-            l:left_link,r:right_link
+            l:left_link,r:right_link,code:"".to_string()
         };
 
         // remove first two elements of vector
@@ -75,15 +74,24 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
         nodes.sort();
     }
 
-    root
+    nodes[0].clone()
 }
 
-fn get_huff_codes(huff_tree_head:Node) -> BTreeMap<Node,u32>{
-    let mut ret_hash = BTreeMap::new();
-
-
-
-    ret_hash
+fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
+    match root{
+        Some(inside) => {
+            marker.push('0');
+            mark_tree(&mut inside.l,marker);
+            inside.code = marker.to_string();
+            marker.push('1');
+            mark_tree(&mut inside.r,marker);
+            marker.pop();
+        }
+        None => {
+            // reached leaf     
+            marker.pop();
+        }
+    }
 }
 
 fn main() {
@@ -104,9 +112,10 @@ fn main() {
     // sort in desc order
     nodes.sort();
 
-    let tree_head = build_huff_tree(&mut nodes);
-
-    let huff_codes = get_huff_codes(tree_head);
+    let mut tree_head = build_huff_tree(&mut nodes);
+    let mut tree_head_ref = Some(Box::new(tree_head));
+    mark_tree(&mut tree_head_ref,&mut "".to_string());
+    println!("{:?}",tree_head_ref);
 }
 
 fn get_hash_char_freq(msg:String) -> BTreeMap<char,usize> {
