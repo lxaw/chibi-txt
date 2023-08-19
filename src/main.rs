@@ -1,6 +1,33 @@
 use std::{collections::{BTreeMap,VecDeque}, hash};
+use std::fs;
+use std::fs::File;
+use std::io::{Read, Result};
 
-// https://www.geeksforgeeks.org/huffman-coding-greedy-algo-3/
+const SPECIAL_CHAR: char = '\0';
+
+fn read_file_to_string(filename: &str) -> Result<String> {
+    // Open the file in read-only mode
+    let mut file = File::open(filename)?;
+
+    // Read the entire content of the file into a String
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+
+    Ok(content)
+}
+
+fn get_file_size_bytes(filename: &str) -> Result<u64>{
+    match fs::metadata(filename) {
+        Ok(metadata) => {
+            let file_size = metadata.len();
+            return Ok(file_size);
+        }
+        Err(err) => {
+            return Err(err);
+        }
+    }
+}
+
 
 type Link = Option<Box<Node>>;
 
@@ -60,7 +87,7 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
             l:nodes[1].l.clone(),r:nodes[1].r.clone(),code:"".to_string()
         }));
         // $ is special character
-        let new_node = Node{data:'$',freq:new_freq,
+        let new_node = Node{data:SPECIAL_CHAR,freq:new_freq,
             l:left_link,r:right_link,code:"".to_string()
         };
 
@@ -76,6 +103,7 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     nodes[0].clone()
 }
 
+// this preorder search should be iterative
 fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
     match root{
         Some(inside) => {
@@ -114,7 +142,7 @@ fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,String>{
         // Process the current node (top of the stack)
         let node = stack.pop_back().unwrap();
 
-        if node.data != '$'{
+        if node.data != SPECIAL_CHAR{
             ret_hash.insert(node.data,node.code);
         }
 
@@ -124,25 +152,45 @@ fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,String>{
     ret_hash 
 }
 
-fn main() {
-    let msg = "This is my secret message. Please do not let anyone see!".to_string();
+fn encode_file(msg: &String,map: &BTreeMap<char,String>) -> String{
 
+    let encoded_str = convert_to_code_str(msg,&map);
+
+    encoded_str
+}
+fn get_tree_root(msg: &String) -> Option<Box<Node>>{
     let hm = get_hash_char_freq(msg.clone());
-
     let mut nodes = get_nodes(hm);
     // sort in desc order
     nodes.sort();
-
     let mut tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
     mark_tree(&mut tree_head_ref,&mut "".to_string());
-    let hash_code= get_hash_of_tree(tree_head_ref);
 
-    let encoded_str = convert_to_code_str(msg,&hash_code);
+    tree_head_ref
+}
+
+fn main() {
+    let file_name = "my_txt.txt";
+    // this should be actually checking for error
+    let str_content =read_file_to_string(file_name).unwrap();
+    let file_size_bytes = get_file_size_bytes(file_name).unwrap() as f64;
+    println!("file size prior: {}",file_size_bytes);
+
+    // create the hash 
+    let tree_root = get_tree_root(&str_content);
+    let hash_code= get_hash_of_tree(tree_root);
+
+    // encode the file
+    let str_encoded = encode_file(&str_content,&hash_code);
+    let new_byte_size:f64 = (str_encoded.len()/8) as f64;
+    println!("New file size: {}",new_byte_size);
+    println!("Percentage of original file size: {}",(new_byte_size/file_size_bytes)*100.0)
+
     // println!("{}",encoded_str);
 
     // decode the string
-    println!("{}",decode_encoded_str(encoded_str,&hash_code));
+    // println!("{}",decode_encoded_str(str_encoded,&hash_code));
 }
 
 fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> String{
@@ -165,7 +213,7 @@ fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> Strin
 }
 
 
-fn convert_to_code_str(original_msg: String,map: &BTreeMap<char,String>) -> String{
+fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,String>) -> String{
     // converts original message to encoded one
     let mut ret = String::new();
 
