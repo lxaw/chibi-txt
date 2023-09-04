@@ -11,10 +11,13 @@ Right now only txt. However, the code is simple enough to use with pretty much a
 cargo run [input_file.txt] [output_file.bin]
 
 # Example:
--> cargo run example_txt/anna_karenina.txt "out.bin"
-File compression percentage: 182.88868810627798
-Old file size: 2026200 (in bytes)
-After file size:1107887 (in bytes)
+`user@computer:~/ cargo run example_txt/anna_karenina.txt "out.bin"`
+
+`File compression percentage: 182.88868810627798`
+
+`Old file size: 2026200 (in bytes)`
+
+`After file size:1107887 (in bytes)`
 
 # Notes:
 This can surely be optimized. It was one of my first projects in Rust, so I am sure I will look back in agony at how poorly it was done. However, that is a problem for future me.
