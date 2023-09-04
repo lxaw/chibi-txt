@@ -9,7 +9,7 @@ pub struct Node{
     pub freq: usize,
     pub l: Link,
     pub r: Link,
-    pub code:String,
+    pub code:Vec<bool>,
 }
 impl PartialEq for Node{
     fn eq(&self, other: &Self) -> bool {
@@ -31,7 +31,7 @@ impl Ord for Node{
 }
 impl Node{
     pub fn new(data: char, freq: usize)->Node{
-        Node {data:data,freq:freq,l:None,r:None,code:"".to_string()}
+        Node {data:data,freq:freq,l:None,r:None,code:Vec::new()}
     }
 }
 

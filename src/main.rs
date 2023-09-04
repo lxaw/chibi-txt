@@ -100,8 +100,7 @@ fn main() {
     // encode the file
     let str_encoded = huffman::encode_file(&str_content,&hash_code);
 
-    let my_array: [bool;13] = [false,true,false,true,false,false,true,true,false,false,true,true,true];
-    let my_vec = my_array.to_vec();
+    let my_vec =str_encoded.to_vec();
 
     // file size before
     // should thread this

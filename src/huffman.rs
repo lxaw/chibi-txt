@@ -13,15 +13,15 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
         let new_freq = nodes[0].freq + nodes[1].freq;
         let left_link = Some(Box::new(Node{
             data:nodes[0].data,freq:nodes[0].freq,
-            l:nodes[0].l.clone(),r:nodes[0].r.clone(),code:"".to_string()
+            l:nodes[0].l.clone(),r:nodes[0].r.clone(),code:Vec::new()
         }));
         let right_link = Some(Box::new(Node{
             data:nodes[1].data,freq:nodes[1].freq,
-            l:nodes[1].l.clone(),r:nodes[1].r.clone(),code:"".to_string()
+            l:nodes[1].l.clone(),r:nodes[1].r.clone(),code:Vec::new()
         }));
         // $ is special character
         let new_node = Node{data:SPECIAL_CHAR,freq:new_freq,
-            l:left_link,r:right_link,code:"".to_string()
+            l:left_link,r:right_link,code:Vec::new()
         };
 
         // remove first two elements of vector
@@ -37,13 +37,13 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
 }
 
 // this preorder search should be iterative
-fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
+fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut Vec<bool>){
     match root{
         Some(inside) => {
-            marker.push('0');
+            marker.push(false);
             mark_tree(&mut inside.l,marker);
-            inside.code = marker.to_string();
-            marker.push('1');
+            inside.code = marker.to_vec();
+            marker.push(true);
             mark_tree(&mut inside.r,marker);
             // need to pop
             marker.pop();
@@ -73,8 +73,8 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
 //         }
 //     }
 // }
-pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,String>{
-    let mut ret_hash: BTreeMap<char,String> = BTreeMap::new();
+pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,Vec<bool>>{
+    let mut ret_hash: BTreeMap<char,Vec<bool>> = BTreeMap::new();
 
     let mut stack: VecDeque<Box<Node>> = VecDeque::new();
     let mut current = root;
@@ -104,7 +104,7 @@ pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,String>{
     ret_hash 
 }
 
-pub fn encode_file(msg: &String,map: &BTreeMap<char,String>) -> String{
+pub fn encode_file(msg: &String,map: &BTreeMap<char,Vec<bool>>) -> Vec<bool>{
 
     let encoded_str = convert_to_code_str(msg,&map);
 
@@ -117,7 +117,7 @@ pub fn get_tree_root(msg: &String) -> Option<Box<Node>>{
     nodes.sort();
     let mut tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
-    mark_tree(&mut tree_head_ref,&mut "".to_string());
+    mark_tree(&mut tree_head_ref,&mut Vec::new());
 
     tree_head_ref
 }
@@ -142,12 +142,12 @@ pub fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> S
 }
 
 
-fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,String>) -> String{
+fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,Vec<bool>>) ->Vec<bool>{
     // converts original message to encoded one
-    let mut ret = String::new();
+    let mut ret = Vec::new();
 
     for c in original_msg.chars(){
-        ret.push_str(map.get(&c).unwrap());
+        ret.extend(map.get(&c).unwrap());
     }
 
     ret
