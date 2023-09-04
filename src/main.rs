@@ -34,8 +34,8 @@ fn get_file_size_bytes(filename: &str) -> Result<u64>{
 fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()>{
     let mut file = File::create(filename)?;
 
-    let mut byte_buffer: u8 = 0;
-    let mut bit_position = data.len();
+    let _byte_buffer: u8 = 0;
+    let _bit_position = data.len();
     
         // Create a buffer to store bits
     let mut bit_buffer: u8 = 0;
@@ -113,6 +113,8 @@ fn main() {
 
     let percentage = (prior_file_size / after_file_size) * 100.0;
 
-    println!("File compression percentage: {percentage}\nOld file size: {prior_file_size}\nAfter file size:{after_file_size}");
+    println!("File compression percentage: {percentage}");
+    println!("Old file size: {prior_file_size} (in bytes)");
+    println!("After file size: {after_file_size} (in bytes)");
 
 }
