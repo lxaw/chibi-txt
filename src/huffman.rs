@@ -153,6 +153,7 @@ fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,Vec<bool>>) ->V
     ret
 }
 
+
 fn get_hash_char_freq(msg:String) -> BTreeMap<char,usize> {
     /*
     Return a hashmap of characters and their respective frequencies.

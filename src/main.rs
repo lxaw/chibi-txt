@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::fs;
 use std::io::{Read, Result,Write};
@@ -61,6 +62,28 @@ fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()>{
         file.write(&[bit_buffer])?;
     }
 
+    file.flush();
+
+    Ok(())
+}
+
+fn print_hash_to_file(map: &BTreeMap<char,Vec<bool>>, filename: &str) -> std::io::Result<()>{
+    let mut file = File::create(filename)?;
+
+    for (key,value) in map{
+        file.write(&[key.to_owned() as u8])?;
+        file.write(&[' ' as u8])?;
+        for bool_val in value{
+            if *bool_val{
+                file.write(&['1' as u8])?;
+            }else{
+                file.write(&['0' as u8])?;
+            }
+        }
+        file.write(&['\n' as u8])?;
+    }
+    file.flush()?;
+
     Ok(())
 }
 
@@ -116,5 +139,7 @@ fn main() {
     println!("File compression percentage: {percentage}");
     println!("Old file size: {prior_file_size} (in bytes)");
     println!("After file size: {after_file_size} (in bytes)");
+
+    print_hash_to_file(&hash_code,"out.txt");
 
 }

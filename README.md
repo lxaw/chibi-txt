@@ -17,7 +17,7 @@ cargo run [input_file.txt] [output_file.bin]
 
 `Old file size: 2026200 (in bytes)`
 
-`After file size:1107887 (in bytes)`
+`After file size: 1107887 (in bytes)`
 
 # Notes:
 This can surely be optimized. It was one of my first projects in Rust, so I am sure I will look back in agony at how poorly it was done. However, that is a problem for future me.
