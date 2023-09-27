@@ -22,5 +22,5 @@ cargo run [input_file.txt] [output_file.bin]
 # Notes:
 This can surely be optimized. It was one of my first projects in Rust, so I am sure I will look back in agony at how poorly it was done. However, that is a problem for future me.
 
-## How to Support
+## ❤️ How to Support ❤️
 - If this code or anyother I have written has helped you, feel free to make a donation at https://www.buymeacoffee.com/whalenlexn.
