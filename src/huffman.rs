@@ -2,7 +2,7 @@ use std::{collections::{BTreeMap,VecDeque}};
 use super::node::{Node};
 
 const SPECIAL_CHAR: char = '\0';
-
+const NEW_LINE: char = '%';
 
 fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     // alg:
@@ -54,25 +54,6 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut Vec<bool>){
         }
     }
 }
-// fn mark_tree(root: &mut Option<Box<Node>>,marker: &mut String){
-//     let mut stack = VecDeque::new();
-
-//     if let Some(node) = root {
-//         stack.push_back(node);
-
-//         while let Some(node) = stack.pop_back() {
-//             print!("{} ", node.freq);
-
-//             if let Some(right) = node.r{
-//                 stack.push_back(& mut right);
-//             }
-
-//             if let Some(left) = node.r{
-//                 stack.push_back(&mut left);
-//             }
-//         }
-//     }
-// }
 pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,Vec<bool>>{
     let mut ret_hash: BTreeMap<char,Vec<bool>> = BTreeMap::new();
 
@@ -122,7 +103,7 @@ pub fn get_tree_root(msg: &String) -> Option<Box<Node>>{
     tree_head_ref
 }
 
-pub fn decode_encoded_str(encoded_msg: String, map: &BTreeMap<char,String>) -> String{
+pub fn decode_encoded_str(encoded_msg: &String, map: &BTreeMap<char,String>) -> String{
     // decode string
     let mut ret = String::new();
     let mut msg_copy = encoded_msg.clone();
@@ -147,7 +128,11 @@ fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,Vec<bool>>) ->V
     let mut ret = Vec::new();
 
     for c in original_msg.chars(){
-        ret.extend(map.get(&c).unwrap());
+        if c == '\n'{
+            ret.extend(map.get(&NEW_LINE).unwrap());
+        }else{
+            ret.extend(map.get(&c).unwrap());
+        }
     }
 
     ret
@@ -164,15 +149,27 @@ fn get_hash_char_freq(msg:String) -> BTreeMap<char,usize> {
         ...
     }
     */
+    // very important
+    // FIX THIS SO THAT WE CAN WORK WITH SPACES AND NEW LINES AND TABS
     let mut ret_hash: BTreeMap<char,usize> = BTreeMap::new();
     
     for (_i,c) in msg.chars().enumerate(){
-        if ret_hash.contains_key(&c){
-            // if contains, just add to the freq
-            ret_hash.insert(c,1+ret_hash[&c]);
+        if c == '\n'{
+            if ret_hash.contains_key(&NEW_LINE){
+                // if contains, just add to the freq
+                ret_hash.insert(NEW_LINE,1+ret_hash[&NEW_LINE]);
+            }else{
+                // first entry
+                ret_hash.insert(NEW_LINE,1);
+            }
         }else{
-            // first entry
-            ret_hash.insert(c,1);
+            if ret_hash.contains_key(&c){
+                // if contains, just add to the freq
+                ret_hash.insert(c,1+ret_hash[&c]);
+            }else{
+                // first entry
+                ret_hash.insert(c,1);
+            }
         }
     }
 

@@ -1,12 +1,34 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::fs;
-use std::io::{Read, Result,Write};
+use std::io::{Read, Result,Write, BufReader, BufRead};
 use chibiTxt::huffman;
+use std::env;
 
 
-// for command line args
-use clap::{Arg,Command};
+fn get_hash_from_txt(file_name: &str) -> Result<BTreeMap<char, String> > {
+    // Create a BTreeMap to store the data
+    let mut data_map: BTreeMap<char, String> = BTreeMap::new();
+
+    if let Ok(file) = File::open(file_name) {
+        let reader = BufReader::new(file);
+
+        for (line_number, line) in reader.lines().enumerate() {
+            if let Ok(line_text) = line {
+
+                // Check if the line has the expected format
+                if let (Some(first_char), Some(rest)) = (line_text.chars().next(),line_text.get(1..)) {
+                    // Trim white space from the "rest" string
+                    let trimmed_rest = rest.trim();
+                    // Insert the data into the BTreeMap
+                    data_map.insert(first_char, trimmed_rest.to_string());
+                }
+            }
+        }
+    }
+
+    Ok(data_map)
+}
 
 
 fn read_file_to_string(filename: &str) -> Result<String> {
@@ -88,58 +110,86 @@ fn print_hash_to_file(map: &BTreeMap<char,Vec<bool>>, filename: &str) -> std::io
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
 
-    // clap
-    let matches = Command::new("chibiTxt")
-        .version("0.true")
-        .author("Lex W. <https://github.com/lxaw/chibiTxt>")
-        .about("A simple file encoder.")
-        .arg(Arg::new("input")
-            .value_name("INPUT_FILE")
-            .help("Sets the input text file name.")
-            .required(true)
-            .index(1)
-        )
-        .arg(Arg::new("output")
-            .value_name("OUTPUT_FILE")
-            .help("Sets the output binary file name.")
-            .required(true)
-            .index(2)
-        )
-        .get_matches();
+    if args.len() < 4 {
+        println!("Usage: {} <-e/-d> <input> <output>", args[0]);
+        return;
+    }
 
-    let input_file_name = matches.get_one::<String>("input").unwrap();
-    let output_file_name = matches.get_one::<String>("output").unwrap();
+    let flag = &args[1];
 
-    // this should be actually checking for error
-    let str_content =read_file_to_string(input_file_name).unwrap();
-    // let file_size_bytes = get_file_size_bytes(input_file_name).unwrap() as f64;
-    // println!("file size prior: {}",file_size_bytes);
+    match flag.as_str() {
+        "-e" => {
 
-    // create the hash 
-    let tree_root = huffman::get_tree_root(&str_content);
-    let hash_code= huffman::get_hash_of_tree(tree_root);
+            let input_file_name= &args[2];
+            let output_file_name= &args[3];
+            // Handle the case for the "-e" argument
 
-    // encode the file
-    let str_encoded = huffman::encode_file(&str_content,&hash_code);
+            // this should be actually checking for error
+            let str_content =read_file_to_string(input_file_name).unwrap();
+            // let file_size_bytes = get_file_size_bytes(input_file_name).unwrap() as f64;
+            // println!("file size prior: {}",file_size_bytes);
 
-    let my_vec =str_encoded.to_vec();
+            // create the hash 
+            let tree_root = huffman::get_tree_root(&str_content);
+            let hash_code= huffman::get_hash_of_tree(tree_root);
 
-    // file size before
-    // should thread this
-    let prior_file_size = get_file_size_bytes(&input_file_name).unwrap() as f64;
+            // encode the file
+            let str_encoded = huffman::encode_file(&str_content,&hash_code);
 
-    // println!("{}",huffman::decode_encoded_str(str_encoded,&hash_code));
+            let my_vec =str_encoded.to_vec();
 
-    write_str_to_file(&output_file_name, &my_vec);
-    let after_file_size = get_file_size_bytes(&output_file_name).unwrap() as f64;
+            // file size before
+            // should thread this
+            let prior_file_size = get_file_size_bytes(&input_file_name).unwrap() as f64;
 
-    let percentage = (prior_file_size / after_file_size) * 100.0;
+            write_str_to_file(&output_file_name, &my_vec);
+            let after_file_size = get_file_size_bytes(&output_file_name).unwrap() as f64;
 
-    println!("File compression percentage: {percentage}");
-    println!("Old file size: {prior_file_size} (in bytes)");
-    println!("After file size: {after_file_size} (in bytes)");
+            let percentage = (prior_file_size / after_file_size) * 100.0;
 
-    print_hash_to_file(&hash_code,"out.txt");
+            println!("File compression percentage: {percentage}");
+            println!("Old file size: {prior_file_size} (in bytes)");
+            println!("After file size: {after_file_size} (in bytes)");
+
+            print_hash_to_file(&hash_code,"out.txt");
+        }
+        "-d" => {
+            let input_bin_name= &args[2];
+            let input_dict_name= &args[3];
+            let output_file_name = &args[4];
+
+            // input is a binary file
+            let mut file_contents = String::new();
+
+            let mut file = File::open(input_bin_name).unwrap();
+            // Create a buffer to read data into
+            let mut buffer = [0; 1]; // Read one byte (8 bits) at a time
+
+            // Read and process the file
+            while let Ok(bytes_read) = file.read(&mut buffer) {
+                if bytes_read == 0 {
+                    break; // End of file
+                }
+
+                // Process each bit in the byte
+                for i in 0..8 {
+                    let bit = (buffer[0] & (1 << i)) >> i;
+                    file_contents.push_str(&bit.to_string());
+                }
+            }
+
+            let map = get_hash_from_txt(&input_dict_name).unwrap();
+            let file_decrypted = huffman::decode_encoded_str(&file_contents, &map);
+            let mut file = File::create(output_file_name).unwrap();
+            write!(file,"{}",file_decrypted);
+        }
+        _ => {
+            println!("Unknown argument: {}", flag);
+            println!("Usage: {} <-e/-d> <input> <output>", args[0]);
+        }
+    }
+
 
 }
