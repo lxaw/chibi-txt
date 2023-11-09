@@ -112,7 +112,12 @@ pub fn decode_encoded_str(encoded_msg: &String, map: &BTreeMap<char,String>) -> 
         for (key,value) in map.iter(){
             if value.len() <= msg_copy.len() && msg_copy.starts_with(value) {
                 // check if this key matches the current substring
-                ret.push(*key);
+                if *key == NEW_LINE{
+                    ret.push('\n');
+                }
+                else{
+                    ret.push(*key);
+                }
                 // remove len chars
                 msg_copy.drain(..value.len());
             }
