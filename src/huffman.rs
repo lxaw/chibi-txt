@@ -4,7 +4,7 @@ use crate::my_tree_map::MyTreeMap;
 use super::node::Node;
 
 const SPECIAL_CHAR: char = '\0';
-const NEW_LINE: char = '%';
+const NEW_LINE: char = '_';
 
 fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     // alg:
