@@ -1,5 +1,5 @@
-use std::{collections::{BTreeMap,VecDeque}};
-use super::node::{Node};
+use std::collections::{BTreeMap,VecDeque};
+use super::node::Node;
 
 const SPECIAL_CHAR: char = '\0';
 const NEW_LINE: char = '%';
@@ -9,7 +9,7 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     // 1) Order the nodes based on freq
     // 2) Merge the two nodes with smallest freqs
     // 3) repeat until one node left
-    while(nodes.len() > 1){
+    while nodes.len() > 1{
         let new_freq = nodes[0].freq + nodes[1].freq;
         let left_link = Some(Box::new(Node{
             data:nodes[0].data,freq:nodes[0].freq,
@@ -96,7 +96,7 @@ pub fn get_tree_root(msg: &String) -> Option<Box<Node>>{
     let mut nodes = get_nodes(hm);
     // sort in desc order
     nodes.sort();
-    let mut tree_head = build_huff_tree(&mut nodes);
+    let tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
     mark_tree(&mut tree_head_ref,&mut Vec::new());
 
