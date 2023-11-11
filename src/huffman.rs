@@ -1,4 +1,6 @@
-use std::collections::{BTreeMap,VecDeque};
+use std::collections::{VecDeque, BTreeMap};
+use crate::my_tree_map::MyTreeMap;
+
 use super::node::Node;
 
 const SPECIAL_CHAR: char = '\0';
@@ -11,24 +13,23 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
     // 3) repeat until one node left
     while nodes.len() > 1{
         let new_freq = nodes[0].freq + nodes[1].freq;
-        let left_link = Some(Box::new(Node{
-            data:nodes[0].data,freq:nodes[0].freq,
-            l:nodes[0].l.clone(),r:nodes[0].r.clone(),code:Vec::new()
-        }));
-        let right_link = Some(Box::new(Node{
-            data:nodes[1].data,freq:nodes[1].freq,
-            l:nodes[1].l.clone(),r:nodes[1].r.clone(),code:Vec::new()
-        }));
-        // $ is special character
-        let new_node = Node{data:SPECIAL_CHAR,freq:new_freq,
-            l:left_link,r:right_link,code:Vec::new()
-        };
+        let left_link_node = Node::new_param(nodes[0].data,nodes[0].freq,nodes[0].l.clone(),nodes[0].r.clone(),String::new());
+        let left_link = Some(Box::new(left_link_node));
+        
+        let right_link_node = Node::new_param(nodes[1].data,nodes[1].freq,nodes[1].l.clone(),nodes[1].r.clone(),String::new());
+        let right_link = Some(Box::new(right_link_node));
+
+        // this is the top node that is used to be sorted (see the wikipedia image of the tree)
+        // the new node adds the two frequencies
+        let new_node = Node::new_param(SPECIAL_CHAR,new_freq, left_link, right_link,String::new());
 
         // remove first two elements of vector
+        // (ie, the left and right nodes)
         nodes.drain(0..2);
 
         // push new node in 
         nodes.push(new_node);
+
         // sort the tree
         nodes.sort();
     }
@@ -37,13 +38,16 @@ fn build_huff_tree(nodes : &mut Vec<Node>) -> Node{
 }
 
 // this preorder search should be iterative
-fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut Vec<bool>){
+fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut String){
     match root{
         Some(inside) => {
-            marker.push(false);
+            marker.push('0');
             mark_tree(&mut inside.l,marker);
-            inside.code = marker.to_vec();
-            marker.push(true);
+            inside.code = marker.to_string();
+            // since we always pad with 0's when there not an even byte amount of binary,
+            // we want to ensure codes always start with 1 to avoid mistranslations
+            inside.code.insert(0,'1');
+            marker.push('1');
             mark_tree(&mut inside.r,marker);
             // need to pop
             marker.pop();
@@ -54,8 +58,10 @@ fn mark_tree(root: &mut Option<Box<Node>>,marker:&mut Vec<bool>){
         }
     }
 }
-pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,Vec<bool>>{
-    let mut ret_hash: BTreeMap<char,Vec<bool>> = BTreeMap::new();
+
+// create a hash map (ie, BTreeMap) of the Huffman tree
+pub fn get_hash_of_tree(root: Option<Box<Node>>) -> MyTreeMap{
+    let mut ret_hash: MyTreeMap =MyTreeMap::new_default();
 
     let mut stack: VecDeque<Box<Node>> = VecDeque::new();
     let mut current = root;
@@ -76,7 +82,7 @@ pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,Vec<bool>>{
         let node = stack.pop_back().unwrap();
 
         if node.data != SPECIAL_CHAR{
-            ret_hash.insert(node.data,node.code);
+            ret_hash.data_map.insert(node.data,node.code);
         }
 
         // Move to the right subtree
@@ -85,7 +91,7 @@ pub fn get_hash_of_tree(root: Option<Box<Node>>) -> BTreeMap<char,Vec<bool>>{
     ret_hash 
 }
 
-pub fn encode_file(msg: &String,map: &BTreeMap<char,Vec<bool>>) -> Vec<bool>{
+pub fn encode_file(msg: &String,map: &MyTreeMap) -> String{
 
     let encoded_str = convert_to_code_str(msg,&map);
 
@@ -98,29 +104,37 @@ pub fn get_tree_root(msg: &String) -> Option<Box<Node>>{
     nodes.sort();
     let tree_head = build_huff_tree(&mut nodes);
     let mut tree_head_ref = Some(Box::new(tree_head));
-    mark_tree(&mut tree_head_ref,&mut Vec::new());
+    mark_tree(&mut tree_head_ref,&mut String::new());
+    // mark_tree_iterative(&mut tree_head_ref,&mut Vec::new());
 
     tree_head_ref
 }
 
-pub fn decode_encoded_str(encoded_msg: &String, map: &BTreeMap<char,String>) -> String{
-    // decode string
+pub fn decode_encoded_str(encoded_msg: &mut String, map: &MyTreeMap) -> String {
     let mut ret = String::new();
-    let mut msg_copy = encoded_msg.clone();
+    let mut index = 0;
 
-    for _ in 0..encoded_msg.len(){
-        for (key,value) in map.iter(){
-            if value.len() <= msg_copy.len() && msg_copy.starts_with(value) {
-                // check if this key matches the current substring
-                if *key == NEW_LINE{
+    while index < encoded_msg.len() {
+        let mut found = false;
+
+        for (key, value) in map.data_map.iter() {
+            if value.len() <= encoded_msg.len() && encoded_msg[index..].starts_with(value) {
+                if *key == NEW_LINE {
                     ret.push('\n');
-                }
-                else{
+                } else {
                     ret.push(*key);
                 }
-                // remove len chars
-                msg_copy.drain(..value.len());
+
+                index += value.len();
+                found = true;
+                break;
             }
+        }
+
+        if !found {
+            // If no match is found, just copy the character
+            ret.push(encoded_msg.chars().nth(index).unwrap());
+            index += 1;
         }
     }
 
@@ -128,15 +142,16 @@ pub fn decode_encoded_str(encoded_msg: &String, map: &BTreeMap<char,String>) -> 
 }
 
 
-fn convert_to_code_str(original_msg: &String,map: &BTreeMap<char,Vec<bool>>) ->Vec<bool>{
+
+fn convert_to_code_str(original_msg: &String,map: &MyTreeMap) -> String{
     // converts original message to encoded one
-    let mut ret = Vec::new();
+    let mut ret = String::new();
 
     for c in original_msg.chars(){
         if c == '\n'{
-            ret.extend(map.get(&NEW_LINE).unwrap());
+            ret.extend(map.data_map.get(&NEW_LINE).unwrap().chars());
         }else{
-            ret.extend(map.get(&c).unwrap());
+            ret.extend(map.data_map.get(&c).unwrap().chars());
         }
     }
 
@@ -185,7 +200,7 @@ fn get_nodes(btm: BTreeMap<char,usize>) -> Vec<Node>{
     let mut vec : Vec<Node> = Vec::new();
 
     for (c,f) in btm.iter(){
-        let node : Node = Node::new(*c,*f);
+        let node : Node = Node::new_default(*c,*f);
         vec.push(node);
     }
 

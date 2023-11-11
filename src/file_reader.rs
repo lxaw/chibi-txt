@@ -1,14 +1,15 @@
-use std::collections::BTreeMap;
 use std::io::{Read, Result,Write, BufReader, BufRead};
 use std::fs::File;
 use std::fs;
 
+use super::my_tree_map::MyTreeMap;
+
 /*
 Read a BTreeMap from the key file.
  */
-pub fn get_hash_from_txt(file_name: &str) -> Result<BTreeMap<char, String> > {
+pub fn get_hash_from_txt(file_name: &str) -> Result<MyTreeMap> {
     // Create a BTreeMap to store the data
-    let mut data_map: BTreeMap<char, String> = BTreeMap::new();
+    let mut my_tree_map= MyTreeMap::new_default();
 
     if let Ok(file) = File::open(file_name) {
         let reader = BufReader::new(file);
@@ -21,13 +22,14 @@ pub fn get_hash_from_txt(file_name: &str) -> Result<BTreeMap<char, String> > {
                     // Trim white space from the "rest" string
                     let trimmed_rest = rest.trim();
                     // Insert the data into the BTreeMap
-                    data_map.insert(first_char, trimmed_rest.to_string());
+
+                    my_tree_map.data_map.insert(first_char, trimmed_rest.to_string());
                 }
             }
         }
     }
 
-    Ok(data_map)
+    Ok(my_tree_map)
 }
 
 pub fn read_file_to_string(filename: &str) -> Result<String> {
@@ -54,7 +56,7 @@ pub fn get_file_size_bytes(filename: &str) -> Result<u64>{
     }
 }
 
-pub fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()>{
+pub fn write_str_to_file(filename: &str, data: &String) -> std::io::Result<()>{
     let mut file = File::create(filename)?;
 
     let _byte_buffer: u8 = 0;
@@ -65,8 +67,8 @@ pub fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()
     let mut bit_position = 0; // Start from the least significant bit
 
     // read the bits
-    for bit in data.iter() {
-        if *bit {
+    for bit in data.chars() {
+        if bit == '1'{
             bit_buffer |= 1 << bit_position;
         }
 
@@ -81,13 +83,6 @@ pub fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()
     }
 
     // If there are any remaining bits in the buffer, write them and pad with '0's
-    println!("bit position at end: {}",bit_position);
-    let num_bits_to_write = 8 - bit_position;
-
-    let two = 2;
-
-    let bit_buffer = two.pow(num_bits_to_write)-1;
-
     if bit_position != 0 {
         file.write(&[bit_buffer])?;
     }
@@ -97,17 +92,17 @@ pub fn write_str_to_file(filename: &str, data: &Vec<bool>) -> std::io::Result<()
     Ok(())
 }
 
-pub fn print_hash_to_file(map: &BTreeMap<char,Vec<bool>>, filename: &str) -> std::io::Result<()>{
+pub fn print_hash_to_file(map: &MyTreeMap, filename: &str) -> std::io::Result<()>{
     let mut file = File::create(filename)?;
 
-    for (key,value) in map{
+    for (key,value) in map.data_map.clone(){
         file.write(&[key.to_owned() as u8])?;
         file.write(&[' ' as u8])?;
-        for bool_val in value{
-            if *bool_val{
-                file.write(&['1' as u8])?;
+        for c in value.chars(){
+            if c == '1'{
+                let _ = file.write(&[c as u8]);
             }else{
-                file.write(&['0' as u8])?;
+                let _ = file.write(&[c as u8]);
             }
         }
         file.write(&['\n' as u8])?;
